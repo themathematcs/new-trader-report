@@ -25,7 +25,7 @@ export default function App() {
   const [realizedPnl, setRealizedPnl] = useState(0);
   const [showSettings, setShowSettings] = useState(false);
   const [showGoTo, setShowGoTo] = useState(false);
-  const [goToDate, setGoToDate] = useState("2019-01-01");
+  const [goToDate, setGoToDate] = useState("2026-01-01");
 
   const [activeChart, setActiveChart] = useState<1 | 2>(1);
   const [symbol1, setSymbol1] = useState("ES");
@@ -38,7 +38,7 @@ export default function App() {
   const [orders, setOrders] = useState<ChartOrder[]>([]);
   const [closedTrades, setClosedTrades] = useState<ClosedTrade[]>([]);
 
-  const [replayIndex, setReplayIndex] = useState(500);
+  const [replayIndex, setReplayIndex] = useState(9500);
   const [isReplaying, setIsReplaying] = useState(false);
   const [replaySpeed, setReplaySpeed] = useState(10);
 
@@ -75,8 +75,8 @@ export default function App() {
   const currentSymbol = activeChart === 1 ? symbol1 : symbol2;
   const currentTf = activeChart === 1 ? tf1 : tf2;
 
-  const masterEsData = useMemo(() => generateCandleData(10000, '2019-01-01', symbol1 === "NQ" ? 19800 : symbol1 === "ES" ? 5600 : 100, tf1), [symbol1, tf1]);
-  const masterNqData = useMemo(() => generateCandleData(10000, '2019-01-01', symbol2 === "NQ" ? 19800 : symbol2 === "ES" ? 5600 : 100, tf2), [symbol2, tf2]);
+  const masterEsData = useMemo(() => generateCandleData(10000, '2019-01-01', symbol1, tf1), [symbol1, tf1]);
+  const masterNqData = useMemo(() => generateCandleData(10000, '2019-01-01', symbol2, tf2), [symbol2, tf2]);
 
   const esData = useMemo(() => {
     return masterEsData.slice(0, replayIndex);

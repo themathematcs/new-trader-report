@@ -1,0 +1,6 @@
+{
+  "name": "Weekly Profile Backtester",
+  "description": "An interactive market replay sandbox to backtest and train on Classic Expansion, Consolidation Reversal, and Midweek Reversal weekly profiles.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

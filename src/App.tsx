@@ -2,15 +2,23 @@ import React, { useState, useMemo, useEffect } from "react";
 import { 
   ChevronDown, ChevronUp, Search, Plus, Sparkles, LayoutGrid, 
   Settings, Maximize, Play, SkipBack, SkipForward, ArrowDownRight, ArrowUpRight,
-  MousePointer2, PenLine, Divide, Type, SquareMenu, ZoomIn, Magnet, Lock, EyeOff, Trash2, Expand, X, BookOpen, Calendar, Settings2
+  MousePointer2, PenLine, Divide, Type, SquareMenu, ZoomIn, Magnet, Lock, EyeOff, Trash2, Expand, X, BookOpen, Calendar, Settings2, Navigation
 } from "lucide-react";
-import { ChartComponent, ChartOrder, ClosedTrade } from "./components/ChartComponent";
+import { ChartComponent, ChartOrder, ClosedTrade, Drawing } from "./components/ChartComponent";
 import { generateCandleData } from "./utils/mockData";
 
 export default function App() {
   const [activeTab, setActiveTab] = useState("open");
+  const [activeRightTab, setActiveRightTab] = useState<string | null>("Order");
   const [splitScreen, setSplitScreen] = useState(true);
   const [tableCollapsed, setTableCollapsed] = useState(false);
+  
+  // Interactive drawing states
+  const [activeDrawingTool, setActiveDrawingTool] = useState<string>("cursor");
+  const [magnetEnabled, setMagnetEnabled] = useState(false);
+  const [drawingsLocked, setDrawingsLocked] = useState(false);
+  const [drawingsHidden, setDrawingsHidden] = useState(false);
+  const [drawings, setDrawings] = useState<Drawing[]>([]);
   
   const [balance, setBalance] = useState(100000);
   const [leverage, setLeverage] = useState(10);
@@ -271,22 +279,87 @@ export default function App() {
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left Toolbar */}
-        <div className="w-12 bg-[#131722] border-r border-slate-800/80 flex flex-col items-center py-3 gap-3 overflow-y-auto shrink-0">
-          <button className="p-2 text-cyan-500 rounded"><MousePointer2 className="w-4 h-4" /></button>
-          <button className="p-2 text-slate-500 hover:text-slate-200"><PenLine className="w-4 h-4" /></button>
-          <button className="p-2 text-slate-500 hover:text-slate-200"><ArrowDownRight className="w-4 h-4" /></button>
-          <button className="p-2 text-slate-500 hover:text-slate-200"><Divide className="w-4 h-4" /></button>
-          <button className="p-2 text-slate-500 hover:text-slate-200"><ArrowUpRight className="w-4 h-4" /></button>
-          <button className="p-2 text-slate-500 hover:text-slate-200"><Type className="w-4 h-4" /></button>
-          <button className="p-2 text-slate-500 hover:text-slate-200"><SquareMenu className="w-4 h-4" /></button>
-          <button className="p-2 text-slate-500 hover:text-slate-200"><ZoomIn className="w-4 h-4" /></button>
+        <div className="w-12 bg-[#131722] border-r border-slate-800/80 flex flex-col items-center py-3 gap-2 overflow-y-auto shrink-0 animate-fade-in">
+          <button 
+            title="Cursor / Select"
+            className={`p-2 transition-all rounded-md ${activeDrawingTool === "cursor" ? "text-cyan-400 bg-cyan-500/10 border border-cyan-500/20" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"}`}
+            onClick={() => setActiveDrawingTool("cursor")}
+          >
+            <MousePointer2 className="w-4 h-4" />
+          </button>
+          <button 
+            title="Brush / Pen"
+            className={`p-2 transition-all rounded-md ${activeDrawingTool === "brush" ? "text-cyan-400 bg-cyan-500/10 border border-cyan-500/20" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"}`}
+            onClick={() => setActiveDrawingTool("brush")}
+          >
+            <PenLine className="w-4 h-4" />
+          </button>
+          <button 
+            title="Trendline"
+            className={`p-2 transition-all rounded-md ${activeDrawingTool === "trendline" ? "text-cyan-400 bg-cyan-500/10 border border-cyan-500/20" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"}`}
+            onClick={() => setActiveDrawingTool("trendline")}
+          >
+            <ArrowDownRight className="w-4 h-4" />
+          </button>
+          <button 
+            title="Fibonacci Retracement"
+            className={`p-2 transition-all rounded-md ${activeDrawingTool === "fib" ? "text-cyan-400 bg-cyan-500/10 border border-cyan-500/20" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"}`}
+            onClick={() => setActiveDrawingTool("fib")}
+          >
+            <Divide className="w-4 h-4" />
+          </button>
+          <button 
+            title="Text Label"
+            className={`p-2 transition-all rounded-md ${activeDrawingTool === "text" ? "text-cyan-400 bg-cyan-500/10 border border-cyan-500/20" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"}`}
+            onClick={() => setActiveDrawingTool("text")}
+          >
+            <Type className="w-4 h-4" />
+          </button>
+          <button 
+            title="Shape Rectangle"
+            className={`p-2 transition-all rounded-md ${activeDrawingTool === "shape" ? "text-cyan-400 bg-cyan-500/10 border border-cyan-500/20" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"}`}
+            onClick={() => setActiveDrawingTool("shape")}
+          >
+            <SquareMenu className="w-4 h-4" />
+          </button>
+          <button 
+            title="Zoom Region"
+            className={`p-2 transition-all rounded-md ${activeDrawingTool === "zoom" ? "text-cyan-400 bg-cyan-500/10 border border-cyan-500/20" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"}`}
+            onClick={() => setActiveDrawingTool("zoom")}
+          >
+            <ZoomIn className="w-4 h-4" />
+          </button>
           
-          <div className="h-[1px] w-6 bg-slate-800 my-1"></div>
+          <div className="h-[1px] w-6 bg-slate-800/80 my-1"></div>
           
-          <button className="p-2 text-slate-500 hover:text-slate-200"><Magnet className="w-4 h-4" /></button>
-          <button className="p-2 text-slate-500 hover:text-slate-200"><Lock className="w-4 h-4" /></button>
-          <button className="p-2 text-slate-500 hover:text-slate-200"><EyeOff className="w-4 h-4" /></button>
-          <button className="p-2 text-slate-500 hover:text-slate-200"><Trash2 className="w-4 h-4" /></button>
+          <button 
+            title="Magnet Snapping"
+            className={`p-2 transition-all rounded-md ${magnetEnabled ? "text-amber-400 bg-amber-500/10 border border-amber-500/20" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"}`}
+            onClick={() => setMagnetEnabled(!magnetEnabled)}
+          >
+            <Magnet className="w-4 h-4" />
+          </button>
+          <button 
+            title="Lock Drawings"
+            className={`p-2 transition-all rounded-md ${drawingsLocked ? "text-red-400 bg-red-500/10 border border-red-500/20" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"}`}
+            onClick={() => setDrawingsLocked(!drawingsLocked)}
+          >
+            <Lock className="w-4 h-4" />
+          </button>
+          <button 
+            title={drawingsHidden ? "Show drawings" : "Hide drawings"}
+            className={`p-2 transition-all rounded-md ${drawingsHidden ? "text-purple-400 bg-purple-500/10 border border-purple-500/20" : "text-slate-400 hover:text-slate-200 hover:bg-slate-800"}`}
+            onClick={() => setDrawingsHidden(!drawingsHidden)}
+          >
+            <EyeOff className="w-4 h-4" />
+          </button>
+          <button 
+            title="Delete all drawings"
+            className="p-2 text-slate-400 hover:text-red-400 hover:bg-red-500/10 rounded-md transition-all"
+            onClick={() => { if (window.confirm("Clear all drawings from current session?")) { setDrawings([]); } }}
+          >
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
 
         {/* Charts Container - Split View mockup */}
@@ -295,24 +368,54 @@ export default function App() {
           <div className="flex-1 flex overflow-hidden">
             {/* Left Chart */}
             <div 
-              className={`flex-1 ${splitScreen ? 'border-r border-[#1C2030]' : ''} relative overflow-hidden flex flex-col z-0 cursor-crosshair`}
+              className={`flex-1 ${splitScreen ? 'border-r border-[#1C2030]' : ''} relative overflow-hidden flex flex-col z-0`}
               onClick={() => setActiveChart(1)}
             >
               <div className={`absolute top-2 left-2 text-xs font-mono pointer-events-none z-10 bg-[#0a0c10]/50 px-1 rounded border ${activeChart === 1 ? 'border-cyan-500/50 text-slate-200' : 'border-transparent text-slate-400'}`}>
                 {symbol1} . {tf1} • <span className="text-emerald-400">O</span>5752.50 <span className="text-emerald-400">H</span>5752.75 <span className="text-rose-400">L</span>5752.75 <span className="text-slate-300">C</span>5752.75 0.00 (0.00%)
               </div>
-              <ChartComponent data={esData} orders={orders} closedTrades={closedTrades.filter(t => t.symbol === symbol1)} onOrderDragEnd={handleOrderDragEnd} />
+              <ChartComponent 
+                data={esData} 
+                orders={orders} 
+                closedTrades={closedTrades.filter(t => t.symbol === symbol1)} 
+                onOrderDragEnd={handleOrderDragEnd} 
+                activeDrawingTool={activeDrawingTool}
+                onDrawingToolChange={setActiveDrawingTool}
+                magnetEnabled={magnetEnabled}
+                drawingsLocked={drawingsLocked}
+                drawingsHidden={drawingsHidden}
+                symbol={symbol1}
+                drawings={drawings}
+                onAddDrawing={(newDrawing) => setDrawings(prev => [...prev, newDrawing])}
+                onDeleteDrawing={(id) => setDrawings(prev => prev.filter(win => win.id !== id))}
+                onUpdateDrawing={(updatedDrawing) => setDrawings(prev => prev.map(d => d.id === updatedDrawing.id ? updatedDrawing : d))}
+              />
             </div>
             {/* Right Chart */}
             {splitScreen && (
               <div 
-                className="flex-1 relative overflow-hidden flex flex-col z-0 cursor-crosshair"
+                className="flex-1 relative overflow-hidden flex flex-col z-0"
                 onClick={() => setActiveChart(2)}
               >
                 <div className={`absolute top-2 left-2 text-xs font-mono pointer-events-none z-10 bg-[#0a0c10]/50 px-1 rounded border ${activeChart === 2 ? 'border-cyan-500/50 text-slate-200' : 'border-transparent text-slate-400'}`}>
                   {symbol2} . {tf2} • <span className="text-emerald-400">O</span>20012.00 <span className="text-emerald-400">H</span>20014.50 <span className="text-rose-400">L</span>20011.75 <span className="text-slate-300">C</span>20013.50 +1.75 (+0.01%)
                 </div>
-                <ChartComponent data={nqData} orders={orders} closedTrades={closedTrades.filter(t => t.symbol === symbol2)} onOrderDragEnd={handleOrderDragEnd} />
+                <ChartComponent 
+                  data={nqData} 
+                  orders={orders} 
+                  closedTrades={closedTrades.filter(t => t.symbol === symbol2)} 
+                  onOrderDragEnd={handleOrderDragEnd} 
+                  activeDrawingTool={activeDrawingTool}
+                  onDrawingToolChange={setActiveDrawingTool}
+                  magnetEnabled={magnetEnabled}
+                  drawingsLocked={drawingsLocked}
+                  drawingsHidden={drawingsHidden}
+                  symbol={symbol2}
+                  drawings={drawings}
+                  onAddDrawing={(newDrawing) => setDrawings(prev => [...prev, newDrawing])}
+                  onDeleteDrawing={(id) => setDrawings(prev => prev.filter(win => win.id !== id))}
+                  onUpdateDrawing={(updatedDrawing) => setDrawings(prev => prev.map(d => d.id === updatedDrawing.id ? updatedDrawing : d))}
+                />
               </div>
             )}
           </div>
@@ -365,27 +468,78 @@ export default function App() {
           </div>
         </div>
 
+        {/* Right Sidebar Panel */}
+        {activeRightTab && (
+          <div className="w-64 bg-[#131722] border-l border-slate-800/80 flex flex-col shrink-0 z-10 transition-all">
+            <div className="h-10 border-b border-slate-800 flex items-center justify-between px-4 shrink-0 text-slate-200">
+              <span className="font-bold text-xs uppercase tracking-wider">{activeRightTab}</span>
+              <X className="w-4 h-4 text-slate-500 cursor-pointer hover:text-white" onClick={() => setActiveRightTab(null)} />
+            </div>
+            <div className="flex-1 p-4 overflow-y-auto text-sm text-slate-400">
+              {activeRightTab === 'Order' && (
+                <div className="flex flex-col gap-4">
+                  <div className="flex flex-col gap-2">
+                    <span className="text-xs font-semibold text-slate-500 uppercase">Place Order</span>
+                    <div className="flex items-center justify-between bg-[#0A0C14] px-3 py-2 border border-slate-800 rounded">
+                       <span>Qty</span>
+                       <input type="number" defaultValue="1" className="w-16 bg-transparent text-right text-white outline-none" />
+                    </div>
+                  </div>
+                  <div className="flex gap-2 font-semibold">
+                    <button className="flex-1 bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 py-2 rounded hover:bg-emerald-500/30 transition-colors" onClick={() => handleBuySell('buy')}>Buy</button>
+                    <button className="flex-1 bg-rose-500/20 text-rose-400 border border-rose-500/30 py-2 rounded hover:bg-rose-500/30 transition-colors" onClick={() => handleBuySell('sell')}>Sell</button>
+                  </div>
+                </div>
+              )}
+              {activeRightTab === 'Details' && (
+                <div>No details available for the current trade.</div>
+              )}
+              {activeRightTab === 'Journal' && (
+                <textarea className="w-full h-32 bg-[#0A0C14] border border-slate-800 rounded p-2 text-white outline-none resize-none placeholder-slate-600 focus:border-indigo-500/50" placeholder="Type your trading journal note for the session..."></textarea>
+              )}
+              {activeRightTab === 'Calendar' && (
+                <div className="flex flex-col gap-2">
+                   <div className="flex justify-between items-center bg-[#0A0C14] p-3 border border-slate-800 rounded">
+                      <div className="flex flex-col">
+                        <span className="text-white text-xs font-semibold">FOMC Minutes</span>
+                        <span className="text-slate-500 text-[10px]">14:00 EST</span>
+                      </div>
+                      <span className="text-rose-400 font-extrabold flex">!!!</span>
+                   </div>
+                   <div className="flex justify-between items-center bg-[#0A0C14] p-3 border border-slate-800 rounded">
+                      <div className="flex flex-col">
+                        <span className="text-white text-xs font-semibold">Core CPI</span>
+                        <span className="text-slate-500 text-[10px]">08:30 EST</span>
+                      </div>
+                      <span className="text-rose-400 font-extrabold flex">!!!</span>
+                   </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Right Nav Rail fixed */}
-        <div className="w-12 bg-[#131722] border-l border-slate-800/80 flex flex-col items-center py-2 gap-4 shrink-0 shadow-[-10px_0_20px_rgba(0,0,0,0.5)] z-20 h-full">
-          <button className="flex flex-col items-center text-[#7C88A8] hover:text-white p-1">
-            <span className="border border-indigo-400/50 p-1.5 rounded-md text-indigo-400 bg-indigo-500/10"><MousePointer2 className="w-4 h-4"/></span>
-            <span className="text-[8px] mt-1 pr-0.5">Order</span>
+        <div className="w-16 bg-[#0A0C14] border-l border-slate-800/80 flex flex-col items-center py-2 gap-4 shrink-0 shadow-[-10px_0_20px_rgba(0,0,0,0.5)] z-20 h-full">
+          <button className={`flex flex-col items-center hover:text-white p-1 ${activeRightTab === 'Order' ? 'text-indigo-400' : 'text-[#7C88A8]'}`} onClick={() => setActiveRightTab(activeRightTab === 'Order' ? null : 'Order')}>
+            <span className={`p-1.5 rounded-md ${activeRightTab === 'Order' ? 'border border-indigo-400/50 bg-indigo-500/10' : ''}`}><Navigation className="w-5 h-5"/></span>
+            <span className="text-[10px] mt-1">Order</span>
           </button>
-          <button className="flex flex-col items-center text-[#7C88A8] hover:text-white p-1">
-             <span className="p-1"><Type className="w-4 h-4"/></span>
-             <span className="text-[8px] mt-1 pr-0.5">Details</span>
+          <button className={`flex flex-col items-center hover:text-white p-1 ${activeRightTab === 'Details' ? 'text-indigo-400' : 'text-[#7C88A8]'}`} onClick={() => setActiveRightTab(activeRightTab === 'Details' ? null : 'Details')}>
+             <span className={`p-1.5 rounded-md ${activeRightTab === 'Details' ? 'border border-indigo-400/50 bg-indigo-500/10' : ''}`}><Type className="w-5 h-5"/></span>
+             <span className="text-[10px] mt-1">Details</span>
           </button>
-           <button className="flex flex-col items-center text-[#7C88A8] hover:text-white p-1">
-             <span className="p-1"><BookOpen className="w-4 h-4"/></span>
-             <span className="text-[8px] mt-1 pr-0.5">Journal</span>
+           <button className={`flex flex-col items-center hover:text-white p-1 ${activeRightTab === 'Journal' ? 'text-indigo-400' : 'text-[#7C88A8]'}`} onClick={() => setActiveRightTab(activeRightTab === 'Journal' ? null : 'Journal')}>
+             <span className={`p-1.5 rounded-md ${activeRightTab === 'Journal' ? 'border border-indigo-400/50 bg-indigo-500/10' : ''}`}><BookOpen className="w-5 h-5"/></span>
+             <span className="text-[10px] mt-1">Journal</span>
           </button>
-           <button className="flex flex-col items-center text-[#7C88A8] hover:text-white p-1">
-             <span className="p-1"><Calendar className="w-4 h-4"/></span>
-             <span className="text-[8px] mt-1 pr-0.5">Calendar</span>
+           <button className={`flex flex-col items-center hover:text-white p-1 ${activeRightTab === 'Calendar' ? 'text-indigo-400' : 'text-[#7C88A8]'}`} onClick={() => setActiveRightTab(activeRightTab === 'Calendar' ? null : 'Calendar')}>
+             <span className={`p-1.5 rounded-md ${activeRightTab === 'Calendar' ? 'border border-indigo-400/50 bg-indigo-500/10' : ''}`}><Calendar className="w-5 h-5"/></span>
+             <span className="text-[10px] mt-1">Calendar</span>
           </button>
            <button className="flex flex-col items-center text-[#7C88A8] hover:text-white p-1 mt-auto pb-4">
-             <span className="p-1"><Settings2 className="w-4 h-4"/></span>
-             <span className="text-[8px] mt-1 pr-0.5">Settings</span>
+             <span className="p-1"><Settings2 className="w-5 h-5"/></span>
+             <span className="text-[10px] mt-1">Settings</span>
           </button>
         </div>
       </div>
